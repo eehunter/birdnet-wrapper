@@ -1,0 +1,15 @@
+__pycache__/
+
+# Virtual Environment for linux users
+bird-venv/
+activate-bird-venv
+
+# Model (this is too big, so I don't want to include it in the git repo)
+V2.4/
+
+
+eBird_taxonomy_codes_2024E.json
+cache
+
+examples/
+!examples/species_list_noise.txt

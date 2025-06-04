@@ -13,3 +13,5 @@ cache
 
 examples/
 !examples/species_list_noise.txt
+
+output/

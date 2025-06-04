@@ -12,20 +12,23 @@ absl.logging.set_verbosity(absl.logging.ERROR)
 audio_folder = Path("examples")
 species_list_file = Path("examples/species_list_noise.txt")
 selection_file_folder = Path("output")
+
 output_nocall = False
+
+combined_output_file = os.path.join(selection_file_folder, "combined_output.txt")
 
 
 RAVEN_TABLE_HEADER = (
     "Selection\tView\tChannel\tBegin Time (s)\tEnd Time (s)\tLow Freq (Hz)\tHigh Freq (Hz)\tCommon Name\tSpecies Code\tConfidence\tBegin Path\tFile Offset (s)\n"
 )
+
 SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
 CODES_FILE: str = os.path.join(SCRIPT_DIR, "eBird_taxonomy_codes_2024E.json")
-LABELS_FILE: str = os.path.join(SCRIPT_DIR, "V2.4/BirdNET_GLOBAL_6K_V2.4_Labels.txt")
-TRANSLATED_LABELS_PATH: str = os.path.join(SCRIPT_DIR, "labels/V2.4")
+#LABELS_FILE: str = os.path.join(SCRIPT_DIR, "V2.4/BirdNET_GLOBAL_6K_V2.4_Labels.txt")
 
 
 
-LABELS = utils.read_lines(LABELS_FILE)
+#LABELS = utils.read_lines(LABELS_FILE)
 CODES = utils.load_codes(CODES_FILE)
 
 # Frequency range. This is model specific and should not be changed.
@@ -38,15 +41,15 @@ BANDPASS_FMAX: int = 15000
 
 # Audio speed
 AUDIO_SPEED: float = 1.0
-
-
-species_list = set("")
-with open(species_list_file, 'r') as file:
-    species_list = set(file.read().splitlines(True))
     
 
 
 def predict_species_for_file(file: Path):
+    """Predicts what species can be heard during each 3 second interval in a given audio file, 
+    and writes the resulting data to Raven tables."""
+    
+    print(f"Loading Audio from: {file}")
+    
     predictions = SpeciesPredictions(predict_species_within_audio_file(
         file,
         min_confidence=0.3,
@@ -54,13 +57,8 @@ def predict_species_for_file(file: Path):
         species_filter=get_species_from_file(species_list_file)
     ))
     
-    
-
-    # get most probable prediction at time interval 0s-3s
-    
     timestamps = []
     result = {}
-    
     
     for timestamp, prediction in predictions.items():
         if not bool(prediction):
@@ -69,16 +67,9 @@ def predict_species_for_file(file: Path):
         timestamp_str = f"{timestamp[0]}-{timestamp[1]}"
         timestamps.append(timestamp_str)
         result[timestamp_str] = prediction.items()
-        # if not timestamp_str in result.keys():
-        #     result[timestamp_str] = []
-        # result[timestamp_str].append(prediction)
         
+    # create raven table files and add to combined output file
     generate_raven_table(timestamps, result, file, get_result_file_name(file))
-    
-    
-    # prediction, confidence = list(predictions[(0.0, 3.0)].items())[0]
-    # print(f"predicted '{prediction}' with a confidence of {confidence:.6f}")
-    # predicted 'Poecile atricapillus_Black-capped Chickadee' with a confidence of 0.814056
 
 
 
@@ -86,14 +77,13 @@ def predict_species_for_file(file: Path):
 
 def get_result_file_name(fpath: str | Path):
     """
-    Generates a dictionary of result file names based on the input file path and configured result types.
+    Generates the name of the Raven selection table output file.
 
     Args:
         fpath (str): The file path of the input file.
 
     Returns:
-        dict: A dictionary where the keys are result types (e.g., "table", "audacity", "r", "kaleidoscope", "csv")
-              and the values are the corresponding output file paths.
+        str: The file path of the Raven output file.
     """
     result_names = {}
 
@@ -146,10 +136,6 @@ def generate_raven_table(timestamps: list[str], result: dict[str, list], afile_p
         # Write result string to file
         out_string += rstring
 
-    # If we don't have any valid predictions, we still need to add a line to the selection table
-    # in case we want to combine results
-    # TODO: That's a weird way to do it, but it works for now. It would be better to keep track
-    # of file durations during the analysis.
     nocall = len(out_string) == 0
     if nocall:
         if output_nocall:
@@ -168,6 +154,7 @@ def save_result_file(result_path: str, out_string: str, nocall: bool):
     Args:
         result_path: The path to the result file.
         out_string: The string to be written to the file.
+        nocall: Whether or not a Raven file should be generated if no identifiable sounds are detected.
     """
 
     # Make directory if it doesn't exist
@@ -176,13 +163,16 @@ def save_result_file(result_path: str, out_string: str, nocall: bool):
     # Write the result to the file
     with open(result_path, "w", encoding="utf-8") as rfile:
         rfile.write(RAVEN_TABLE_HEADER+out_string)
-    if nocall: return
-    with open(os.path.join(selection_file_folder, "combined_output.txt"), "a", encoding="utf-8") as rfile:
+    
+    # If result was not nocall, write to the combined file as well
+    if nocall or not bool(combined_output_file): return
+    with open(combined_output_file, "a", encoding="utf-8") as rfile:
         rfile.write(out_string)
 
 
-with open(os.path.join(selection_file_folder, "combined_output.txt"), "w", encoding="utf-8") as rfile:
-    rfile.write(RAVEN_TABLE_HEADER)
+if bool(combined_output_file): 
+    with open(combined_output_file, "w", encoding="utf-8") as rfile:
+        rfile.write(RAVEN_TABLE_HEADER)
 
 
 audio_files = audio_folder.glob("*.WAV")

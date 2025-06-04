@@ -1,8 +1,8 @@
 #!/bin/bash
 
-mkdir cache
 
-cd cache 
+if [ ! -f eBird_taxonomy_codes_2024E.json ]; then
+	wget https://github.com/birdnet-team/BirdNET-Analyzer/raw/refs/heads/main/birdnet_analyzer/eBird_taxonomy_codes_2024E.json
+fi
 
-# I don't think this will work; will come back to this script later
-wget https://drive.google.com/file/d/1ixYBPbZK2Fh1niUQzadE2IWTFZlwATa3
+mkdir V2.4

@@ -1,34 +1,63 @@
 from pathlib import Path
-from birdnet import SpeciesPredictions, predict_species_within_audio_file, predict_species_at_location_and_time, get_species_from_file
 import librosa
 import os
 import utils
-
-# Disables a bunch of unimportant warnings that make it hard to view the actual output
-import absl.logging
-absl.logging.set_verbosity(absl.logging.ERROR)
+import sys, getopt
 
 # Program input settings. Should be replaced with CLI args later, probably
 audio_folder = Path("examples")
-species_list_file = Path("examples/species_list_noise.txt")
+species_list_file = None # Path("examples/species_list_noise.txt")
 selection_file_folder = Path("output")
 
 output_nocall = False
 
-combined_output_file = os.path.join(selection_file_folder, "combined_output.txt")
+combined_output_file = None # os.path.join(selection_file_folder, "combined_output.txt")
 
+try:
+    opts, args = getopt.getopt(sys.argv[1:],"i:s:o:c:nh", ["input_audio=","species_list=","output_dir=","combined_output=","output_nocall","help"])
+except getopt.GetoptError:
+    print("main.py [-i <input_audio_directory>] [-s <species_list_file>] [-o <output_directory>] [-c <combined_output_file>] [-n]")
+    print("""Run "main.py -h" for a list of options.""")
+    sys.exit(2)
+for opt, arg in opts:
+    if opt in ('-h', "--help"):
+        print("""Usage:
+    -h, --help :            Show this message.
+    -i, --input_audio:      Choose a folder to input audio files from.
+    -s, --species_list:     Choose species list file.
+    -o, --output_dir:       Choose directory for individual output files.
+    -c, --combined_output:  Choose path to combined output file.""")
+        sys.exit(0) 
+    if opt in ('-i', "--input_audio"):
+        audio_folder = Path(arg)
+    if opt in ('-s', "--species_list"):
+        species_list_file = Path(arg)
+    if opt in ('-o', "--output_dir"):
+        selection_file_folder = Path(arg)
+    if opt in ('-c', "--combined_output"):
+        combined_output_file = Path(arg)
+    if opt in ('-n', "--output_nocall"):
+        output_nocall = True
+        
+if species_list_file is None:
+    species_list_file = Path(os.path.join(audio_folder, "species_list_noise.txt"))
+
+if combined_output_file is None:
+    combined_output_file = os.path.join(selection_file_folder, "combined_output.txt")
+
+from birdnet import SpeciesPredictions, predict_species_within_audio_file, predict_species_at_location_and_time, get_species_from_file
+
+# Disables a bunch of unimportant warnings that make it hard to view the actual status info
+import absl.logging
+absl.logging.set_verbosity(absl.logging.ERROR)
 
 RAVEN_TABLE_HEADER = (
     "Selection\tView\tChannel\tBegin Time (s)\tEnd Time (s)\tLow Freq (Hz)\tHigh Freq (Hz)\tCommon Name\tSpecies Code\tConfidence\tBegin Path\tFile Offset (s)\n"
 )
 
 SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
+
 CODES_FILE: str = os.path.join(SCRIPT_DIR, "eBird_taxonomy_codes_2024E.json")
-#LABELS_FILE: str = os.path.join(SCRIPT_DIR, "V2.4/BirdNET_GLOBAL_6K_V2.4_Labels.txt")
-
-
-
-#LABELS = utils.read_lines(LABELS_FILE)
 CODES = utils.load_codes(CODES_FILE)
 
 # Frequency range. This is model specific and should not be changed.

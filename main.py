@@ -12,10 +12,11 @@ selection_file_folder = Path("output")
 
 output_nocall = False
 
-combined_output_file = None # os.path.join(selection_file_folder, "combined_output.txt")
+combined_output = True
+combined_output_file = None 
 
 try:
-    opts, args = getopt.getopt(sys.argv[1:],"i:s:o:c:nh", ["input_audio=","species_list=","output_dir=","combined_output=","output_nocall","help"])
+    opts, args = getopt.getopt(sys.argv[1:],"i:s:o:c:nph", ["input_audio=","species_list=","output_dir=","combined_output=","output_nocall","separate_only","help"])
 except getopt.GetoptError:
     print("main.py [-i <input_audio_directory>] [-s <species_list_file>] [-o <output_directory>] [-c <combined_output_file>] [-n]")
     print("""Run "main.py -h" for a list of options.""")
@@ -37,6 +38,8 @@ for opt, arg in opts:
         selection_file_folder = Path(arg)
     if opt in ('-c', "--combined_output"):
         combined_output_file = Path(arg)
+    if opt in ('-p', "--separate_only"):
+        combined_output = False
     if opt in ('-n', "--output_nocall"):
         output_nocall = True
         
@@ -200,20 +203,17 @@ def save_result_file(result_path: str, out_string: str, nocall: bool):
         rfile.write(out_string)
 
 
+# Create output directory if absent
 if not os.path.isdir(selection_file_folder):
     os.mkdir(selection_file_folder)
 
-if bool(combined_output_file): 
+# Create combined output file
+if combined_output: 
     with open(combined_output_file, "w", encoding="utf-8") as rfile:
         rfile.write(RAVEN_TABLE_HEADER)
 
-
-#audio_files = audio_folder.glob("*.WAV")
-#print (audio_files)
-
+# Recursively scan input files
 audio_files = glob.iglob(os.path.join(audio_folder, "**", "*.[wW][aA][vV]"), recursive = True)
 
-#exit(0)
 for path in audio_files:
-    #print(path)
     predict_species_for_file(path)

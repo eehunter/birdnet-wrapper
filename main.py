@@ -199,6 +199,8 @@ def save_result_file(result_path: str, out_string: str, nocall: bool):
         rfile.write(out_string)
 
 
+os.mkdir(selection_file_folder)
+
 if bool(combined_output_file): 
     with open(combined_output_file, "w", encoding="utf-8") as rfile:
         rfile.write(RAVEN_TABLE_HEADER)

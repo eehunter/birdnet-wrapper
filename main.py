@@ -3,6 +3,7 @@ import librosa
 import os
 import utils
 import sys, getopt
+import glob
 
 # Program input settings. Should be replaced with CLI args later, probably
 audio_folder = Path("examples")
@@ -199,13 +200,20 @@ def save_result_file(result_path: str, out_string: str, nocall: bool):
         rfile.write(out_string)
 
 
-os.mkdir(selection_file_folder)
+if not os.path.isdir(selection_file_folder):
+    os.mkdir(selection_file_folder)
 
 if bool(combined_output_file): 
     with open(combined_output_file, "w", encoding="utf-8") as rfile:
         rfile.write(RAVEN_TABLE_HEADER)
 
 
-audio_files = audio_folder.glob("*.WAV")
+#audio_files = audio_folder.glob("*.WAV")
+#print (audio_files)
+
+audio_files = glob.iglob(os.path.join(audio_folder, "**", "*.[wW][aA][vV]"), recursive = True)
+
+#exit(0)
 for path in audio_files:
+    #print(path)
     predict_species_for_file(path)

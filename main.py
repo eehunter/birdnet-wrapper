@@ -2,12 +2,13 @@ from pathlib import Path
 import librosa
 import os
 import utils
+from utils import cfg
 import sys, getopt
 import glob
 
 # Program input settings. Should be replaced with CLI args later, probably
 audio_folder = Path("examples")
-species_list_file = None # Path("examples/species_list_noise.txt")
+species_list_file = None 
 selection_file_folder = Path("output")
 
 output_nocall = False
@@ -15,8 +16,20 @@ output_nocall = False
 combined_output = True
 combined_output_file = None 
 
+overwrite_files = False
+
+
+
+#GET_OPT = lambda opt: MODEL_OPTIONS[opt]
+#SET_OPT = lambda opt, val: MODEL_OPTIONS.update({opt: val})
+
+
+
+
+
+
 try:
-    opts, args = getopt.getopt(sys.argv[1:],"i:s:o:c:nph", ["input_audio=","species_list=","output_dir=","combined_output=","output_nocall","separate_only","help"])
+    opts, args = getopt.getopt(sys.argv[1:],"i:s:o:c:nph", ["input_audio=","species_list=","output_dir=","combined_output=","output_nocall","separate_only","help",*cfg.get_options_desc()])
 except getopt.GetoptError:
     print("main.py [-i <input_audio_directory>] [-s <species_list_file>] [-o <output_directory>] [-c <combined_output_file>] [-n]")
     print("""Run "main.py -h" for a list of options.""")
@@ -42,12 +55,29 @@ for opt, arg in opts:
         combined_output = False
     if opt in ('-n', "--output_nocall"):
         output_nocall = True
+    if opt in cfg.get_options_list():
+        cfg.set_option(opt, arg)
+
+
+
+# The following five variables are deprecated. They should be replaced with cfg properties elsewhere in the code and then removed
+# Frequency range. This is model specific and should not be changed.
+SIG_FMIN: int = cfg.SIG_FMIN
+SIG_FMAX: int = cfg.SIG_FMAX
+# Settings for bandpass filter
+BANDPASS_FMIN: int = cfg.BANDPASS_FMIN
+BANDPASS_FMAX: int = cfg.BANDPASS_FMAX
+# Audio speed
+AUDIO_SPEED: float = cfg.AUDIO_SPEED
+        
+#utils.MODEL_OPTIONS["sig_fmin"] = 1
+#print (SIG_FMIN)
         
 if species_list_file is None:
     species_list_file = Path(os.path.join(audio_folder, "species_list_noise.txt"))
 
 if combined_output_file is None:
-    combined_output_file = os.path.join(selection_file_folder, "combined_output.txt")
+    combined_output_file = Path(os.path.join(selection_file_folder, "combined_output.txt"))
 
 from birdnet import SpeciesPredictions, predict_species_within_audio_file, predict_species_at_location_and_time, get_species_from_file
 
@@ -64,16 +94,7 @@ SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
 CODES_FILE: str = os.path.join(SCRIPT_DIR, "eBird_taxonomy_codes_2024E.json")
 CODES = utils.load_codes(CODES_FILE)
 
-# Frequency range. This is model specific and should not be changed.
-SIG_FMIN: int = 0
-SIG_FMAX: int = 15000
 
-# Settings for bandpass filter
-BANDPASS_FMIN: int = 0
-BANDPASS_FMAX: int = 15000
-
-# Audio speed
-AUDIO_SPEED: float = 1.0
     
 
 
@@ -192,23 +213,28 @@ def save_result_file(result_path: str, out_string: str, nocall: bool):
 
     # Make directory if it doesn't exist
     os.makedirs(os.path.dirname(result_path), exist_ok=True)
+    
+    if Path(result_path).is_file() and not overwrite_files:
+        print(f"{os.path.basename(result_path)} already exists, skipping output")
+        return
 
     # Write the result to the file
     with open(result_path, "w", encoding="utf-8") as rfile:
         rfile.write(RAVEN_TABLE_HEADER+out_string)
     
     # If result was not nocall, write to the combined file as well
-    if nocall or not bool(combined_output_file): return
+    if nocall or not combined_output: return
     with open(combined_output_file, "a", encoding="utf-8") as rfile:
         rfile.write(out_string)
 
 
 # Create output directory if absent
-if not os.path.isdir(selection_file_folder):
-    os.mkdir(selection_file_folder)
+os.makedirs(selection_file_folder, exist_ok=True)
+#if not os.path.isdir(selection_file_folder):
+#    os.mkdir(selection_file_folder)
 
 # Create combined output file
-if combined_output: 
+if combined_output and not combined_output_file.is_file(): 
     with open(combined_output_file, "w", encoding="utf-8") as rfile:
         rfile.write(RAVEN_TABLE_HEADER)
 
@@ -216,4 +242,4 @@ if combined_output:
 audio_files = glob.iglob(os.path.join(audio_folder, "**", "*.[wW][aA][vV]"), recursive = True)
 
 for path in audio_files:
-    predict_species_for_file(path)
+    predict_species_for_file(Path(path))

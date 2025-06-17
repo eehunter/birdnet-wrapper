@@ -1,4 +1,4 @@
-# Setup Instructions
+# Setup Instructions (Deprecated)
 
 Here are the instructions for using the pre-alpha prototype version of this program.
 
@@ -10,7 +10,7 @@ If on a Linux (or OSX as well I think?) system, run `setup-venv.sh`. This *shoul
 
 
 
-# Usage Instructions
+# Setup and Usage Instructions
 
 ## Linux / MacOS
 

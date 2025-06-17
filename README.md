@@ -30,11 +30,11 @@ source ./bird-venv/bin/activate
 In a shell with the virtual environment active, run one of the two following commands. Use the first one if you would like to run BirdNET on your CPU only, and the second if you plan to use a GPU as well. Only Nvidia GPUs with official drivers and CUDA installed are supported. (The commands are from the BirdNET README. I haven't tested the second one, as I don't have a dedicated GPU on this computer)
 
 ```bash
-pip install birdnet --user
+python3.11 -m pip install birdnet 
 ```
 
 ```bash 
-pip install birdnet[and-cuda] --user
+python3.11 -m pip install birdnet[and-cuda] 
 ```
 
 Finally, you must download the taxonomy codes file with one of the following commands, depending on your OS.
@@ -95,11 +95,11 @@ If you used the second option, you may have to run this command in PowerShell. I
 In a shell with the virtual environment active, run one of the two following commands. Use the first one if you would like to run BirdNET on your CPU only, and the second if you plan to use a GPU as well. Only Nvidia GPUs with official drivers and CUDA installed are supported. (The commands are from the BirdNET README. I haven't tested the second one, as I don't have a dedicated GPU on this computer)
 
 ```bat
-pip install birdnet --user
+python3.11 -m pip install birdnet --user
 ```
 
 ```bat 
-pip install birdnet[and-cuda] --user
+python3.11 -m pip install birdnet[and-cuda] --user
 ```
 
 Finally, you must download the taxonomy codes file. The following two commands should download it in a PowerShell window. If that doesn't work, you can download the file [here](https://github.com/birdnet-team/BirdNET-Analyzer/raw/refs/heads/main/birdnet_analyzer/eBird_taxonomy_codes_2024E.json).

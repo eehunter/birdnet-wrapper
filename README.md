@@ -12,7 +12,7 @@ If on a Linux (or OSX as well I think?) system, run `setup-venv.sh`. This *shoul
 
 # Usage Instructions
 
-## Linux
+## Linux / MacOS
 
 Place all desired input audio files in an input directory. By default, `./examples/` is used. This can be changed 
 with the `-i` or `--input_audio` commandline options.
@@ -40,6 +40,16 @@ In a shell with the virtual environment active, run one of the two following com
 ```pip install birdnet --user```
 
 ```pip install birdnet[and-cuda] --user```
+
+Finally, you must download the taxonomy codes file with one of the following commands, depending on your OS.
+
+```
+# Linux
+wget https://github.com/birdnet-team/BirdNET-Analyzer/raw/refs/heads/main/birdnet_analyzer/eBird_taxonomy_codes_2024E.json
+
+# MacOS
+curl https://github.com/birdnet-team/BirdNET-Analyzer/raw/refs/heads/main/birdnet_analyzer/eBird_taxonomy_codes_2024E.json -o eBird_taxonomy_codes_2024E.json
+```
 
 Now you can run the program with the following command. You may need to replace `python3.11` with `python3`, depending on your python installation. Program args may be added to this command.
 

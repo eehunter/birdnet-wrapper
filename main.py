@@ -18,16 +18,6 @@ combined_output_file = None
 
 overwrite_files = False
 
-
-
-#GET_OPT = lambda opt: MODEL_OPTIONS[opt]
-#SET_OPT = lambda opt, val: MODEL_OPTIONS.update({opt: val})
-
-
-
-
-
-
 try:
     opts, args = getopt.getopt(sys.argv[1:],"i:s:o:c:nph", ["input_audio=","species_list=","output_dir=","combined_output=","output_nocall","separate_only","help",*cfg.get_options_desc()])
 except getopt.GetoptError:
@@ -58,20 +48,8 @@ for opt, arg in opts:
     if opt in cfg.get_options_list():
         cfg.set_option(opt, arg)
 
-
-
-# The following five variables are deprecated. They should be replaced with cfg properties elsewhere in the code and then removed
-# Frequency range. This is model specific and should not be changed.
-SIG_FMIN: int = cfg.SIG_FMIN
-SIG_FMAX: int = cfg.SIG_FMAX
-# Settings for bandpass filter
-BANDPASS_FMIN: int = cfg.BANDPASS_FMIN
-BANDPASS_FMAX: int = cfg.BANDPASS_FMAX
-# Audio speed
-AUDIO_SPEED: float = cfg.AUDIO_SPEED
         
-#utils.MODEL_OPTIONS["sig_fmin"] = 1
-#print (SIG_FMIN)
+
         
 if species_list_file is None:
     species_list_file = Path(os.path.join(audio_folder, "species_list_noise.txt"))
@@ -168,10 +146,10 @@ def generate_raven_table(timestamps: list[str], result: dict[str, list], afile_p
     # Read native sample rate
     high_freq = librosa.get_samplerate(afile_path) / 2
 
-    high_freq = min(high_freq, int(SIG_FMAX / AUDIO_SPEED))
+    high_freq = min(high_freq, int(cfg.SIG_FMAX / cfg.AUDIO_SPEED))
 
-    high_freq = int(min(high_freq, int(BANDPASS_FMAX / AUDIO_SPEED)))
-    low_freq = max(SIG_FMIN, int(BANDPASS_FMIN / AUDIO_SPEED))
+    high_freq = int(min(high_freq, int(cfg.BANDPASS_FMAX / cfg.AUDIO_SPEED)))
+    low_freq = max(cfg.SIG_FMIN, int(cfg.BANDPASS_FMIN / cfg.AUDIO_SPEED))
 
     # Extract valid predictions for every timestamp
     for timestamp in timestamps:

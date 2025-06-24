@@ -15,3 +15,6 @@ examples/
 !examples/species_list_noise.txt
 
 output/
+output1/
+
+test/

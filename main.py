@@ -2,14 +2,14 @@ from pathlib import Path
 import librosa
 import os
 import utils
-from utils import cfg, audio_folder, species_list_file, selection_file_folder, output_nocall, combined_output, combined_output_file, overwrite_files, parse_args
+from utils import cfg, parse_args
 import sys, getopt
 import glob
 
 
         
 if __name__ == '__main__':
-    parse_args(sys.argv[1:])
+    if not parse_args(sys.argv[1:]): sys.exit(0)
 
 from birdnet import SpeciesPredictions, predict_species_within_audio_file, predict_species_at_location_and_time, get_species_from_file
 
@@ -35,7 +35,7 @@ def predict_species_for_file(file: Path):
     and writes the resulting data to Raven tables."""
     
     result_file = get_result_file_name(file)
-    if os.path.isfile(result_file) and not overwrite_files:
+    if os.path.isfile(result_file) and not cfg.overwrite_files:
         print(f"File {file} already exists, skipping corresponding audio.")
         return
     
@@ -46,7 +46,7 @@ def predict_species_for_file(file: Path):
         min_confidence=cfg.MIN_CONFIDENCE,
         chunk_overlap_s=cfg.CHUNK_OVERLAP,
         sigmoid_sensitivity=cfg.SIG_SENSE,
-        species_filter=get_species_from_file(species_list_file)
+        species_filter=get_species_from_file(cfg.species_list_file)
     ))
     
     timestamps = []
@@ -79,13 +79,13 @@ def get_result_file_name(fpath: str | Path):
     """
     result_names = {}
 
-    rpath = str(fpath).replace(str(audio_folder), "")
+    rpath = str(fpath).replace(str(cfg.audio_folder), "")
 
     rpath = (rpath[1:] if rpath[0] in ["/", "\\"] else rpath) if rpath else os.path.basename(fpath)
 
     file_shorthand = rpath.rsplit(".", 1)[0]
 
-    return os.path.join(str(selection_file_folder), file_shorthand + ".BirdNET.selection.table.txt")
+    return os.path.join(str(cfg.selection_file_folder), file_shorthand + ".BirdNET.selection.table.txt")
     
 def generate_raven_table(timestamps: list[str], result: dict[str, list], afile_path: str, result_path: str):
     """
@@ -130,7 +130,7 @@ def generate_raven_table(timestamps: list[str], result: dict[str, list], afile_p
 
     nocall = len(out_string) == 0
     if nocall:
-        if output_nocall:
+        if cfg.output_nocall:
             selection_id += 1
             out_string += f"{selection_id}\tSpectrogram 1\t1\t0\t3\t{low_freq}\t{high_freq}\tnocall\tnocall\t1.0\t{afile_path}\t0\n"
         else:
@@ -161,23 +161,23 @@ def save_result_file(result_path: str, out_string: str, nocall: bool):
         rfile.write(RAVEN_TABLE_HEADER+out_string)
     
     # If result was not nocall, write to the combined file as well
-    if nocall or not combined_output: return
-    with open(combined_output_file, "a", encoding="utf-8") as rfile:
+    if nocall or not cfg.combined_output: return
+    with open(cfg.combined_output_file, "a", encoding="utf-8") as rfile:
         rfile.write(out_string)
 
 
 # Create output directory if absent
-os.makedirs(selection_file_folder, exist_ok=True)
+os.makedirs(cfg.selection_file_folder, exist_ok=True)
 #if not os.path.isdir(selection_file_folder):
 #    os.mkdir(selection_file_folder)
 
 # Create combined output file
-if combined_output and not combined_output_file.is_file(): 
-    with open(combined_output_file, "w", encoding="utf-8") as rfile:
+if cfg.combined_output and (cfg.overwrite_files or not cfg.combined_output_file.is_file()): 
+    with open(cfg.combined_output_file, "w", encoding="utf-8") as rfile:
         rfile.write(RAVEN_TABLE_HEADER)
 
 # Recursively scan input files
-audio_files = glob.iglob(os.path.join(audio_folder, "**", "*.[wW][aA][vV]"), recursive = True)
+audio_files = glob.iglob(os.path.join(cfg.audio_folder, "**", "*.[wW][aA][vV]"), recursive = True)
 
 for path in audio_files:
     predict_species_for_file(Path(path))

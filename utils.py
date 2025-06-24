@@ -1,37 +1,45 @@
 from pathlib import Path
 import json
 import sys, getopt
+import os
 
 
-# Default settings. Must be declaired at top-level for now. 
-# These may eventually be abstracted to an object in the utils file,
-# as this would prevent possible issues with unit tests if any of these values
-# are changed here without also being changed in the reset_options function.
-audio_folder = Path("examples")
-species_list_file = None 
-selection_file_folder = Path("output")
+# Default settings.
+DEFAULT_GENERAL_CONFIG_OPTIONS = {
+    "audio_folder": Path("examples"),
+    "species_list_file": None ,
+    "selection_file_folder": Path("output"),
+    "output_nocall": False,
+    "combined_output": True,
+    "combined_output_file": None,
+    "overwrite_files": False,
+}
 
-output_nocall = False
+DEFAULT_MODEL_OPTIONS = {
+    "sig_fmin": 0,
+    "sig_fmax": 15000,
+    "bandpass_fmin": 0,
+    "bandpass_fmax": 15000,
+    "audio_speed": 1.0,
+    "min_confidence": 0.3,
+    "sigmoid_sensitivity": 0.5,
+    "chunk_overlap": 2.0,
+}
 
-combined_output = True
-combined_output_file = None 
+EXTRA_DEFAULTS = {
+    "species_list_file_name": "species_list_noise.txt",
+    "combined_output_file_name": "combined_output.txt",
+}
 
-overwrite_files = False
+
+GENERAL_CONFIG_OPTIONS = DEFAULT_GENERAL_CONFIG_OPTIONS.copy()
+MODEL_OPTIONS = DEFAULT_MODEL_OPTIONS.copy()
 
 def reset_options():
     """Used for unit testing."""
-    audio_folder = Path("examples")
-    species_list_file = None 
-    selection_file_folder = Path("output")
-
-    output_nocall = False
-
-    combined_output = True
-    combined_output_file = None 
-
-    overwrite_files = False
+    GENERAL_CONFIG_OPTIONS.update(DEFAULT_GENERAL_CONFIG_OPTIONS)
     
-    reset_model_options()
+    MODEL_OPTIONS.update(DEFAULT_MODEL_OPTIONS)
     
 def parse_args(args):
     """Parses command line options/arguments for program."""
@@ -49,41 +57,34 @@ def parse_args(args):
         -s, --species_list:     Choose species list file.
         -o, --output_dir:       Choose directory for individual output files.
         -c, --combined_output:  Choose path to combined output file.""")
-            sys.exit(0) 
+            return False
         if opt in ('-i', "--input_audio"):
-            audio_folder = Path(arg)
+            cfg.audio_folder = Path(arg)
         if opt in ('-s', "--species_list"):
-            species_list_file = Path(arg)
+            cfg.species_list_file = Path(arg)
         if opt in ('-o', "--output_dir"):
-            selection_file_folder = Path(arg)
+            cfg.selection_file_folder = Path(arg)
         if opt in ('-c', "--combined_output"):
-            combined_output_file = Path(arg)
+            cfg.combined_output_file = Path(arg)
         if opt in ('-p', "--separate_only"):
-            combined_output = False
+            cfg.combined_output = False
         if opt in ('-n', "--output_nocall"):
-            output_nocall = True
+            cfg.output_nocall = True
         if opt == "--overwrite_files":
-            overwrite_files = True
+            cfg.overwrite_files = True
         if opt in cfg.get_options_list():
             cfg.set_option(opt, arg)
         
-    if species_list_file is None:
-        species_list_file = Path(os.path.join(audio_folder, "species_list_noise.txt"))
+    if cfg.species_list_file is None:
+        cfg.species_list_file = Path(os.path.join(cfg.audio_folder, EXTRA_DEFAULTS["species_list_file_name"]))
 
-    if combined_output_file is None:
-        combined_output_file = Path(os.path.join(selection_file_folder, "combined_output.txt"))
+    if cfg.combined_output_file is None:
+        cfg.combined_output_file = Path(os.path.join(cfg.selection_file_folder, EXTRA_DEFAULTS["combined_output_file_name"]))
+        
+    return True
 
     
-DEFAULT_MODEL_OPTIONS = {
-    "sig_fmin": 0,
-    "sig_fmax": 15000,
-    "bandpass_fmin": 0,
-    "bandpass_fmax": 15000,
-    "audio_speed": 1.0,
-    "min_confidence": 0.3,
-    "sigmoid_sensitivity": 0.5,
-    "chunk_overlap": 2.0,
-}
+
 
 TYPE_CASTING_FUNCTIONS = {
     "int": lambda x: int(x),
@@ -92,8 +93,6 @@ TYPE_CASTING_FUNCTIONS = {
 }
 
 
-MODEL_OPTIONS = DEFAULT_MODEL_OPTIONS.copy()
-
 def model_option(option_name: str): 
     return property(
             fget=lambda x: MODEL_OPTIONS[option_name],
@@ -101,7 +100,28 @@ def model_option(option_name: str):
             fdel=lambda x: MODEL_OPTIONS.update({option_name: DEFAULT_MODEL_OPTIONS[option_name]}),
         )
     
+def general_option(option_name: str): 
+    return property(
+            fget=lambda x: GENERAL_CONFIG_OPTIONS[option_name],
+            fset=lambda x, val: GENERAL_CONFIG_OPTIONS.update({option_name: val}),
+            fdel=lambda x: GENERAL_CONFIG_OPTIONS.update({option_name: DEFAULT_GENERAL_CONFIG_OPTIONS[option_name]}),
+        )
+    
 class Cfg:
+    
+    audio_folder = general_option("audio_folder")
+    species_list_file = general_option("species_list_file") 
+    selection_file_folder = general_option("selection_file_folder")
+
+    output_nocall = general_option("output_nocall")
+
+    combined_output = general_option("combined_output")
+    combined_output_file = general_option("combined_output_file") 
+
+    overwrite_files = general_option("overwrite_files")
+    
+    
+    
     # Frequency range. This is model specific and should not be changed.
     SIG_FMIN: int = model_option("sig_fmin")
     SIG_FMAX: int = model_option("sig_fmax")
@@ -120,6 +140,10 @@ class Cfg:
     
     # Chunk Overlap (Seconds)
     CHUNK_OVERLAP: float = model_option("chunk_overlap")
+    
+    
+    
+    
     
     _options_list = map(lambda opt: f"--{opt}", MODEL_OPTIONS.keys())
     
@@ -143,9 +167,7 @@ class Cfg:
 cfg = Cfg()
 
 
-def reset_model_options():
-    """This function is used for unit testing."""
-    MODEL_OPTIONS = DEFAULT_MODEL_OPTIONS.copy()
+    
 
 
 

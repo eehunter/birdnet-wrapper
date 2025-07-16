@@ -2,80 +2,43 @@ from pathlib import Path
 import librosa
 import os
 import utils
+from utils import cfg, parse_args
 import sys, getopt
 import glob
 
-# Program input settings. Should be replaced with CLI args later, probably
-audio_folder = Path("examples")
-species_list_file = None # Path("examples/species_list_noise.txt")
-selection_file_folder = Path("output")
+# Main guard clause. Will exit the program if the argument parser determines that the program should not continue.
+# This occurs if someone, for example, uses the -h flag. The program should not exit, however, if the -h flag is
+# invoked from a unit test, hence the need for this guard clause.
+if __name__ == '__main__':
+    if not parse_args(sys.argv[1:]): sys.exit(0)
 
-output_nocall = False
-
-combined_output = True
-combined_output_file = None 
-
-try:
-    opts, args = getopt.getopt(sys.argv[1:],"i:s:o:c:nph", ["input_audio=","species_list=","output_dir=","combined_output=","output_nocall","separate_only","help"])
-except getopt.GetoptError:
-    print("main.py [-i <input_audio_directory>] [-s <species_list_file>] [-o <output_directory>] [-c <combined_output_file>] [-n]")
-    print("""Run "main.py -h" for a list of options.""")
-    sys.exit(2)
-for opt, arg in opts:
-    if opt in ('-h', "--help"):
-        print("""Usage:
-    -h, --help :            Show this message.
-    -i, --input_audio:      Choose a folder to input audio files from.
-    -s, --species_list:     Choose species list file.
-    -o, --output_dir:       Choose directory for individual output files.
-    -c, --combined_output:  Choose path to combined output file.""")
-        sys.exit(0) 
-    if opt in ('-i', "--input_audio"):
-        audio_folder = Path(arg)
-    if opt in ('-s', "--species_list"):
-        species_list_file = Path(arg)
-    if opt in ('-o', "--output_dir"):
-        selection_file_folder = Path(arg)
-    if opt in ('-c', "--combined_output"):
-        combined_output_file = Path(arg)
-    if opt in ('-p', "--separate_only"):
-        combined_output = False
-    if opt in ('-n', "--output_nocall"):
-        output_nocall = True
-        
-if species_list_file is None:
-    species_list_file = Path(os.path.join(audio_folder, "species_list_noise.txt"))
-
-if combined_output_file is None:
-    combined_output_file = os.path.join(selection_file_folder, "combined_output.txt")
-
+# If the -h flag is used, the program should exit before importing birdnet, as the import will automatically load
+# the neuralnet software and cause an unneeded delay, and more importantly, will output a bunch of info that is not
+# needed by someone who is trying to view the help menu.
 from birdnet import SpeciesPredictions, predict_species_within_audio_file, predict_species_at_location_and_time, get_species_from_file
 
 # Disables a bunch of unimportant warnings that make it hard to view the actual status info
 import absl.logging
 absl.logging.set_verbosity(absl.logging.ERROR)
 
+# Header for raven table output.
 RAVEN_TABLE_HEADER = (
     "Selection\tView\tChannel\tBegin Time (s)\tEnd Time (s)\tLow Freq (Hz)\tHigh Freq (Hz)\tCommon Name\tSpecies Code\tConfidence\tBegin Path\tFile Offset (s)\n"
 )
 
+# Gets abolute file path for script directory, which is used to read the taxonomy codes file.
+# It's a low priority, but there is probably a better way to do this... perhaps the taxonomy codes should be added
+# as a config option?
 SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
 
+# Read taxonomy codes from file.
 CODES_FILE: str = os.path.join(SCRIPT_DIR, "eBird_taxonomy_codes_2024E.json")
 CODES = utils.load_codes(CODES_FILE)
 
-# Frequency range. This is model specific and should not be changed.
-SIG_FMIN: int = 0
-SIG_FMAX: int = 15000
-
-# Settings for bandpass filter
-BANDPASS_FMIN: int = 0
-BANDPASS_FMAX: int = 15000
-
-# Audio speed
-AUDIO_SPEED: float = 1.0
     
-
+# CODE PAST THIS POINT IS DEPRECATED AND WILL NOT WORK ON THIS VERSION. WILL BE FIXED IN NEXT UPDATE.
+# DISABLED FOR NOW.
+sys.exit(0)
 
 def predict_species_for_file(file: Path):
     """Predicts what species can be heard during each 3 second interval in a given audio file, 

@@ -35,10 +35,7 @@ SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
 CODES_FILE: str = os.path.join(SCRIPT_DIR, "eBird_taxonomy_codes_2024E.json")
 CODES = utils.load_codes(CODES_FILE)
 
-    
-# CODE PAST THIS POINT IS DEPRECATED AND WILL NOT WORK ON THIS VERSION. WILL BE FIXED IN NEXT UPDATE.
-# DISABLED FOR NOW.
-sys.exit(0)
+
 
 def predict_species_for_file(file: Path):
     """Predicts what species can be heard during each 3 second interval in a given audio file, 

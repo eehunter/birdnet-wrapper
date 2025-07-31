@@ -46,17 +46,20 @@ def parse_args(args):
     try:
         opts, args = getopt.getopt(args,"i:s:o:c:nph", ["input_audio=","species_list=","output_dir=","combined_output=","output_nocall","separate_only","overwrite_files","help",*cfg.get_options_desc()])
     except getopt.GetoptError:
-        print("main.py [-i <input_audio_directory>] [-s <species_list_file>] [-o <output_directory>] [-c <combined_output_file>] [-n]")
+        print("main.py [-i <input_audio_directory>] [-s <species_list_file>] [-o <output_directory>] [-c <combined_output_file>] [-n] [OPTIONS...]")
         print("""Run "main.py -h" for a list of options.""")
         sys.exit(2)
     for opt, arg in opts:
         if opt in ('-h', "--help"):
             print("""Usage:
-        -h, --help :            Show this message.
+        -h, --help:             Show this message.
         -i, --input_audio:      Choose a folder to input audio files from.
         -s, --species_list:     Choose species list file.
         -o, --output_dir:       Choose directory for individual output files.
-        -c, --combined_output:  Choose path to combined output file.""")
+        -c, --combined_output:  Choose path to combined output file.
+        
+        --overwrite_files:      Overwrite existing output files.
+        --output_nocall:        Output raven table for audio file even if no sound was identified.""")
             return False
         if opt in ('-i', "--input_audio"):
             cfg.audio_folder = Path(arg)
